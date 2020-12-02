@@ -21,7 +21,7 @@ async def read_messages_from_chat(host, port, path_to_history):
             break
         decoded_chat_message = chat_message.decode()
         await add_message_to_file(decoded_chat_message, path_to_history)
-        print(decoded_chat_message)
+        print(decoded_chat_message.strip('\n'))
 
 
 def get_args_parser():

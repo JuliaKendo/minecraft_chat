@@ -1,30 +1,43 @@
 import asyncio
+import aioconsole
+import json
 import logging
 import configargparse
 from dotenv import load_dotenv
 
 
-async def read_message(reader, tics=1):
-    for _ in range(tics):
-        data = await reader.readline()
-        logging.debug(f'get message: {data.decode()}')
-
-
 async def authorise(reader, writer, account_hash):
-    await read_message(reader)
+    await reader.readline()
     writer.write(f'{account_hash}\n'.encode())
     await writer.drain()
-    await read_message(reader, 2)
+    chat_message = await reader.readline()
+    decoded_chat_message = chat_message.decode()
+    logging.debug(decoded_chat_message.strip('\n'))
+    assert json.loads(decoded_chat_message) is not None
+    chat_message = await reader.readline()
+    decoded_chat_message = chat_message.decode()
+    logging.debug(decoded_chat_message.strip('\n'))
 
 
-async def register():
+async def register(reader, writer, new_user):
     pass
 
 
-async def submit_message(writer):
-    writer.write('Test\n\n'.encode())
+async def submit_message(writer, message):
+    writer.write(f'{message}\n\n'.encode())
     await writer.drain()
-    logging.debug('send message: Test\n\n')
+    logging.debug(f'sent message: {message}')
+
+
+async def get_text_from_cli(prompt):
+    from_user = await aioconsole.ainput(prompt)
+    return from_user.strip()
+
+
+async def handle_messages(writer):
+    while True:
+        message = await get_text_from_cli('> ')
+        await submit_message(writer, message)
 
 
 def get_args_parser():
@@ -36,14 +49,25 @@ def get_args_parser():
 
 
 async def main():
-
     load_dotenv()
     args = get_args_parser().parse_args()
     logging.basicConfig(level=logging.DEBUG)
-
-    reader, writer = await asyncio.open_connection(args.host, int(args.port))
-    await authorise(reader, writer, args.hash)
-    await submit_message(writer)
+    account_hash = args.hash
+    while True:
+        reader, writer = await asyncio.open_connection(args.host, int(args.port))
+        try:
+            await authorise(reader, writer, account_hash)
+            await handle_messages(writer)
+        except AssertionError:
+            new_user = await get_text_from_cli(
+                'Неизвестный токен. Проверьте его или введите Имя для регистрации > '
+            )
+            continue
+        except asyncio.CancelledError:
+            break
+        finally:
+            writer.close()
+            await writer.wait_closed()
 
 
 if __name__ == "__main__":
