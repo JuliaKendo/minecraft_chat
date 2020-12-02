@@ -1,8 +1,9 @@
 import asyncio
 import aioconsole
+import configargparse
 import json
 import logging
-import configargparse
+import re
 from dotenv import load_dotenv
 
 
@@ -26,7 +27,7 @@ async def register(reader, writer, new_user):
     await writer.drain()
     chat_message = await reader.readline()
     decoded_chat_message = chat_message.decode()
-    logging.debug('added new user {new_user} to chat')
+    logging.debug(f'added new user {new_user} to chat')
     return json.loads(decoded_chat_message)['account_hash']
 
 
@@ -38,7 +39,7 @@ async def submit_message(writer, message):
 
 async def get_text_from_cli(prompt):
     from_user = await aioconsole.ainput(prompt)
-    return from_user.strip()
+    return re.escape(from_user.strip()).replace(r'\ ', ' ')
 
 
 async def handle_messages(writer):
