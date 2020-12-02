@@ -20,7 +20,14 @@ async def authorise(reader, writer, account_hash):
 
 
 async def register(reader, writer, new_user):
-    pass
+    logging.debug('new user registration')
+    await reader.readline()
+    writer.write(f'{new_user}\n'.encode())
+    await writer.drain()
+    chat_message = await reader.readline()
+    decoded_chat_message = chat_message.decode()
+    logging.debug('added new user {new_user} to chat')
+    return json.loads(decoded_chat_message)['account_hash']
 
 
 async def submit_message(writer, message):
@@ -62,6 +69,7 @@ async def main():
             new_user = await get_text_from_cli(
                 'Неизвестный токен. Проверьте его или введите Имя для регистрации > '
             )
+            account_hash = await register(reader, writer, new_user)
             continue
         except asyncio.CancelledError:
             break
