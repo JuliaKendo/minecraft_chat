@@ -1,6 +1,7 @@
 import os
 import asyncio
 import aiofiles
+import logging
 import configargparse
 from dotenv import load_dotenv
 from datetime import datetime
@@ -24,14 +25,19 @@ async def read_messages_from_chat(host, port, path_to_history):
 
 
 def get_args_parser():
-    p = configargparse.ArgParser()
-    p.add_argument('--host', required=False, help='chat host', env_var='HOST')
-    p.add_argument('--port', required=False, help='port', env_var='PORT')
-    p.add_argument('--history', required=False, help='path to file with the history', env_var='PATH_TO_HISTORY')
-    return p
+    parser = configargparse.ArgParser()
+    parser.add_argument('--host', required=False, help='chat host', env_var='HOST')
+    parser.add_argument('--port', required=False, help='port', env_var='LISTENING_PORT')
+    parser.add_argument('--history', required=False, help='path to file with the history', env_var='PATH_TO_HISTORY')
+    return parser
+
+
+def main():
+    load_dotenv()
+    args = get_args_parser().parse_args()
+    logging.basicConfig(level=logging.DEBUG)
+    asyncio.run(read_messages_from_chat(args.host, int(args.port), args.history))
 
 
 if __name__ == "__main__":
-    load_dotenv()
-    args = get_args_parser().parse_args()
-    asyncio.run(read_messages_from_chat(args.host, int(args.port), args.history))
+    main()
