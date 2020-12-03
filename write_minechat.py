@@ -48,20 +48,7 @@ async def handle_messages(writer):
         await submit_message(writer, message)
 
 
-def get_args_parser():
-    parser = configargparse.ArgParser()
-    parser.add_argument('--host', required=False, help='chat host', env_var='HOST')
-    parser.add_argument('--port', required=False, help='port', env_var='WRITING_PORT')
-    parser.add_argument('--hash', required=False, help='account_hash', env_var='ACCOUNT_HASH')
-    parser.add_argument('--user', type=str, default='', help='user name')
-    parser.add_argument('--message', type=str, default='', help='message to send to chat')
-    return parser
-
-
-async def main():
-    load_dotenv()
-    args = get_args_parser().parse_args()
-    logging.basicConfig(level=logging.DEBUG)
+async def send_messages_to_chart(args):
     account_hash = args.hash
     while True:
         reader, writer = await asyncio.open_connection(args.host, int(args.port))
@@ -85,5 +72,22 @@ async def main():
             await writer.wait_closed()
 
 
+def get_args_parser():
+    parser = configargparse.ArgParser()
+    parser.add_argument('--host', required=False, default='minechat.dvmn.org', help='chat host', env_var='HOST')
+    parser.add_argument('--port', required=False, default=5050, help='port', env_var='WRITING_PORT')
+    parser.add_argument('--hash', required=False, help='account_hash', env_var='ACCOUNT_HASH')
+    parser.add_argument('--user', type=str, default='', help='user name')
+    parser.add_argument('--message', type=str, default='', help='message to send to chat')
+    return parser
+
+
+def main():
+    load_dotenv()
+    args = get_args_parser().parse_args()
+    logging.basicConfig(level=logging.DEBUG)
+    asyncio.run(send_messages_to_chart(args))
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

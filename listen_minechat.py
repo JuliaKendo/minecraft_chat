@@ -25,8 +25,8 @@ async def read_messages_from_chat(host, port, path_to_history):
 
 def get_args_parser():
     parser = configargparse.ArgParser()
-    parser.add_argument('--host', required=False, help='chat host', env_var='HOST')
-    parser.add_argument('--port', required=False, help='port', env_var='LISTENING_PORT')
+    parser.add_argument('--host', required=False, default='minechat.dvmn.org', help='chat host', env_var='HOST')
+    parser.add_argument('--port', required=False, default=5000, help='port', env_var='LISTENING_PORT')
     parser.add_argument('--history', required=False, help='path to file with the history', env_var='PATH_TO_HISTORY')
     return parser
 
