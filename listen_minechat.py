@@ -1,7 +1,6 @@
 import os
 import asyncio
 import aiofiles
-import logging
 import configargparse
 from dotenv import load_dotenv
 from datetime import datetime
@@ -35,7 +34,6 @@ def get_args_parser():
 def main():
     load_dotenv()
     args = get_args_parser().parse_args()
-    logging.basicConfig(level=logging.DEBUG)
     asyncio.run(read_messages_from_chat(args.host, int(args.port), args.history))
 
 

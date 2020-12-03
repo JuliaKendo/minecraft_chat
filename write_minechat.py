@@ -53,6 +53,8 @@ def get_args_parser():
     parser.add_argument('--host', required=False, help='chat host', env_var='HOST')
     parser.add_argument('--port', required=False, help='port', env_var='WRITING_PORT')
     parser.add_argument('--hash', required=False, help='account_hash', env_var='ACCOUNT_HASH')
+    parser.add_argument('--user', type=str, default='', help='user name')
+    parser.add_argument('--message', type=str, default='', help='message to send to chat')
     return parser
 
 
@@ -65,9 +67,13 @@ async def main():
         reader, writer = await asyncio.open_connection(args.host, int(args.port))
         try:
             await authorise(reader, writer, account_hash)
-            await handle_messages(writer)
+            if args.message:
+                await submit_message(writer, args.message)
+                break
+            else:
+                await handle_messages(writer)
         except AssertionError:
-            new_user = await get_text_from_cli(
+            new_user = args.user if args.user else await get_text_from_cli(
                 'Неизвестный токен. Проверьте его или введите Имя для регистрации > '
             )
             account_hash = await register(reader, writer, new_user)
