@@ -48,7 +48,7 @@ async def handle_messages(writer):
         await submit_message(writer, message)
 
 
-async def send_messages_to_chart(args):
+async def auth_and_send_messages_to_chart(args):
     account_hash = args.hash
     while True:
         reader, writer = await asyncio.open_connection(args.host, int(args.port))
@@ -86,7 +86,7 @@ def main():
     load_dotenv()
     args = get_args_parser().parse_args()
     logging.basicConfig(level=logging.DEBUG)
-    asyncio.run(send_messages_to_chart(args))
+    asyncio.run(auth_and_send_messages_to_chart(args))
 
 
 if __name__ == "__main__":
