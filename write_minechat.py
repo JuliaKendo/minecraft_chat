@@ -55,12 +55,12 @@ async def send_messages_to_chart(args):
         try:
             await authorise(reader, writer, account_hash)
             if args.message:
-                await submit_message(writer, args.message)
+                await submit_message(writer, re.escape(args.message).replace(r'\ ', ' '))
                 break
             else:
                 await handle_messages(writer)
         except AssertionError:
-            new_user = args.user if args.user else await get_text_from_cli(
+            new_user = re.escape(args.user).replace(r'\ ', ' ') if args.user else await get_text_from_cli(
                 'Неизвестный токен. Проверьте его или введите Имя для регистрации > '
             )
             account_hash = await register(reader, writer, new_user)
