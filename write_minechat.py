@@ -1,9 +1,22 @@
 import asyncio
-import aioconsole
-import configargparse
 import json
 import logging
+import aioconsole
+import contextlib
+import configargparse
 from dotenv import load_dotenv
+
+
+@contextlib.asynccontextmanager
+async def open_socket(host, port):
+    reader, writer = await asyncio.open_connection(host, port)
+    try:
+        yield (reader, writer)
+    except asyncio.CancelledError:
+        raise
+    finally:
+        writer.close()
+        await writer.wait_closed()
 
 
 async def authorise(reader, writer, account_hash):
@@ -13,10 +26,11 @@ async def authorise(reader, writer, account_hash):
     chat_message = await reader.readline()
     decoded_chat_message = chat_message.decode()
     logging.debug(decoded_chat_message.strip('\n'))
-    assert json.loads(decoded_chat_message) is not None
-    chat_message = await reader.readline()
-    decoded_chat_message = chat_message.decode()
-    logging.debug(decoded_chat_message.strip('\n'))
+    if json.loads(decoded_chat_message):
+        chat_message = await reader.readline()
+        decoded_chat_message = chat_message.decode()
+        logging.debug(decoded_chat_message.strip('\n'))
+        return True
 
 
 async def register(reader, writer, new_user):
@@ -44,32 +58,21 @@ async def get_text_from_cli(prompt):
 async def handle_messages(writer):
     while True:
         message = await get_text_from_cli('> ')
-        print(message)
         await submit_message(writer, message)
 
 
 async def auth_and_send_messages_to_chart(args):
     account_hash = args.hash
     while True:
-        reader, writer = await asyncio.open_connection(args.host, int(args.port))
-        try:
-            await authorise(reader, writer, account_hash)
-            if args.message:
-                await submit_message(writer, args.message.replace(r'\n', ' '))
-                break
-            else:
+        async with open_socket(args.host, int(args.port)) as socket_connection:
+            reader, writer = socket_connection
+            if await authorise(reader, writer, account_hash):
                 await handle_messages(writer)
-        except AssertionError:
-            new_user = args.user.replace(r'\n', ' ') if args.user else await get_text_from_cli(
-                'Неизвестный токен. Проверьте его или введите Имя для регистрации > '
-            )
-            account_hash = await register(reader, writer, new_user)
-            continue
-        except asyncio.CancelledError:
-            raise
-        finally:
-            writer.close()
-            await writer.wait_closed()
+            else:
+                new_user = args.user.replace(r'\n', ' ') if args.user else await get_text_from_cli(
+                    'Неизвестный токен. Проверьте его или введите Имя для регистрации > '
+                )
+                account_hash = await register(reader, writer, new_user)
 
 
 def get_args_parser():
@@ -78,7 +81,6 @@ def get_args_parser():
     parser.add_argument('--port', required=False, default=5050, help='port', env_var='WRITING_PORT')
     parser.add_argument('--hash', required=False, help='account_hash', env_var='ACCOUNT_HASH')
     parser.add_argument('--user', type=str, default='', help='user name')
-    parser.add_argument('--message', type=str, default='', help='message to send to chat')
     return parser
 
 

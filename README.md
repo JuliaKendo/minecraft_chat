@@ -53,10 +53,8 @@ python3 listen_minechat.py --history history.txt
 
 `--user`    Имя нового пользователя чата, запускает процесс регистрации.
 
-`--message` Единичное сообщение, которое необходимо отправить в чат.
-
 ```bash
-python3 write_minechat.py --user <Имя пользователя> --message <Сообщение в чат>
+python3 write_minechat.py --user <Имя пользователя>
 ```
 
 
