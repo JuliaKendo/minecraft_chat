@@ -1,8 +1,18 @@
 import asyncio
 import aiofiles
+import contextlib
 import configargparse
 from dotenv import load_dotenv
 from datetime import datetime
+
+
+@contextlib.asynccontextmanager
+async def open_socket(host, port):
+    reader, writer = await asyncio.open_connection(host, port)
+    try:
+        yield reader
+    finally:
+        writer.close()
 
 
 async def save_message_to_file(message, path_to_history):
@@ -12,15 +22,15 @@ async def save_message_to_file(message, path_to_history):
 
 
 async def read_messages_from_chat(host, port, path_to_history):
-    reader, _ = await asyncio.open_connection(host, port)
-    await save_message_to_file('Установлено соединение', path_to_history)
-    while True:
-        chat_message = await reader.readline()
-        if not chat_message:
-            continue
-        decoded_chat_message = chat_message.decode()
-        await save_message_to_file(decoded_chat_message, path_to_history)
-        print(decoded_chat_message.strip('\n'))
+    async with open_socket(host, port) as reader:
+        await save_message_to_file('Установлено соединение', path_to_history)
+        while True:
+            chat_message = await reader.readline()
+            if not chat_message:
+                continue
+            decoded_chat_message = chat_message.decode()
+            await save_message_to_file(decoded_chat_message, path_to_history)
+            print(decoded_chat_message.strip('\n'))
 
 
 def get_args_parser():
