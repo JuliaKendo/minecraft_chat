@@ -1,4 +1,3 @@
-import os
 import asyncio
 import aiofiles
 import configargparse
@@ -7,7 +6,7 @@ from datetime import datetime
 
 
 async def save_message_to_file(message, path_to_history):
-    async with aiofiles.open(os.path.join(path_to_history, 'chat_history.txt'), 'a') as file_handler:
+    async with aiofiles.open(path_to_history, 'a') as file_handler:
         await file_handler.write(f'[{datetime.now().strftime("%d-%m-%Y %H:%M")}] {message}')
 
 
@@ -27,7 +26,7 @@ def get_args_parser():
     parser = configargparse.ArgParser()
     parser.add_argument('--host', required=False, default='minechat.dvmn.org', help='chat host', env_var='HOST')
     parser.add_argument('--port', required=False, default=5000, help='port', env_var='LISTENING_PORT')
-    parser.add_argument('--history', required=False, help='path to file with history', env_var='PATH_TO_HISTORY')
+    parser.add_argument('--history', required=False, default='chat_history.txt', help='path to file with history')
     return parser
 
 
