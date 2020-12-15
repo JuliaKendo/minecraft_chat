@@ -7,7 +7,8 @@ from datetime import datetime
 
 async def save_message_to_file(message, path_to_history):
     async with aiofiles.open(path_to_history, 'a') as file_handler:
-        await file_handler.write(f'[{datetime.now().strftime("%d-%m-%Y %H:%M")}] {message}')
+        formatted_date = datetime.now().strftime("%d-%m-%Y %H:%M")
+        await file_handler.write(f'[{formatted_date}] {message}')
 
 
 async def read_messages_from_chat(host, port, path_to_history):
