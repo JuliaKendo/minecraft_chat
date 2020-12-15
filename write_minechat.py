@@ -3,7 +3,6 @@ import aioconsole
 import configargparse
 import json
 import logging
-import re
 from dotenv import load_dotenv
 
 
@@ -39,12 +38,13 @@ async def submit_message(writer, message):
 
 async def get_text_from_cli(prompt):
     from_user = await aioconsole.ainput(prompt)
-    return re.escape(from_user.strip()).replace(r'\ ', ' ')
+    return from_user.replace(r'\n', ' ')
 
 
 async def handle_messages(writer):
     while True:
         message = await get_text_from_cli('> ')
+        print(message)
         await submit_message(writer, message)
 
 
@@ -55,12 +55,12 @@ async def auth_and_send_messages_to_chart(args):
         try:
             await authorise(reader, writer, account_hash)
             if args.message:
-                await submit_message(writer, re.escape(args.message).replace(r'\ ', ' '))
+                await submit_message(writer, args.message.replace(r'\n', ' '))
                 break
             else:
                 await handle_messages(writer)
         except AssertionError:
-            new_user = re.escape(args.user).replace(r'\ ', ' ') if args.user else await get_text_from_cli(
+            new_user = args.user.replace(r'\n', ' ') if args.user else await get_text_from_cli(
                 'Неизвестный токен. Проверьте его или введите Имя для регистрации > '
             )
             account_hash = await register(reader, writer, new_user)
