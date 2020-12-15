@@ -66,7 +66,7 @@ async def auth_and_send_messages_to_chart(args):
             account_hash = await register(reader, writer, new_user)
             continue
         except asyncio.CancelledError:
-            break
+            raise
         finally:
             writer.close()
             await writer.wait_closed()
