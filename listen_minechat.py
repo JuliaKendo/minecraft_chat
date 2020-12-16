@@ -40,7 +40,7 @@ async def read_messages_from_chat(host, port, path_to_history):
     failed_attempts_to_open_socket = 0
     while True:
         if failed_attempts_to_open_socket > 3:
-            time.sleep(60)
+            time.sleep(60)  # полностью блокируем работу скрипта в ожидании восстановления соединения
         async with open_socket(host, port) as reader:
             if not reader:
                 failed_attempts_to_open_socket += 1
