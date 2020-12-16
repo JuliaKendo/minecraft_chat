@@ -55,7 +55,7 @@ async def get_text_from_cli(prompt):
     return from_user.replace(r'\n', ' ')
 
 
-async def handle_messages(writer):
+async def get_and_submit_message(writer):
     while True:
         message = await get_text_from_cli('> ')
         await submit_message(writer, message)
@@ -67,7 +67,7 @@ async def auth_and_send_messages_to_chart(args):
         async with open_socket(args.host, int(args.port)) as socket_connection:
             reader, writer = socket_connection
             if await authorise(reader, writer, account_hash):
-                await handle_messages(writer)
+                await get_and_submit_message(writer)
             else:
                 new_user = args.user.replace(r'\n', ' ') if args.user else await get_text_from_cli(
                     'Неизвестный токен. Проверьте его или введите Имя для регистрации > '

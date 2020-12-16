@@ -1,18 +1,23 @@
+import time
 import asyncio
 import aiofiles
 import contextlib
 import configargparse
 from dotenv import load_dotenv
 from datetime import datetime
+from requests import ConnectionError
 
 
 @contextlib.asynccontextmanager
 async def open_socket(host, port):
-    reader, writer = await asyncio.open_connection(host, port)
+    writer = None
     try:
+        reader, writer = await asyncio.open_connection(host, port)
         yield reader
+    except ConnectionError:
+        yield None
     finally:
-        writer.close()
+        writer.close() if writer else None
 
 
 async def save_message_to_file(message, path_to_history):
@@ -21,16 +26,28 @@ async def save_message_to_file(message, path_to_history):
         await file_handler.write(f'[{formatted_date}] {message}')
 
 
+async def get_and_handle_messages(reader, path_to_history):
+    while True:
+        chat_message = await reader.readline()
+        if not chat_message:
+            continue
+        decoded_chat_message = chat_message.decode()
+        await save_message_to_file(decoded_chat_message, path_to_history)
+        print(decoded_chat_message.strip('\n'))
+
+
 async def read_messages_from_chat(host, port, path_to_history):
-    async with open_socket(host, port) as reader:
-        await save_message_to_file('Установлено соединение', path_to_history)
-        while True:
-            chat_message = await reader.readline()
-            if not chat_message:
+    failed_attempts_to_open_socket = 0
+    while True:
+        if failed_attempts_to_open_socket > 3:
+            time.sleep(60)
+        async with open_socket(host, port) as reader:
+            if not reader:
+                failed_attempts_to_open_socket += 1
                 continue
-            decoded_chat_message = chat_message.decode()
-            await save_message_to_file(decoded_chat_message, path_to_history)
-            print(decoded_chat_message.strip('\n'))
+            failed_attempts_to_open_socket = 0
+            await save_message_to_file('Установлено соединение', path_to_history)
+            await get_and_handle_messages(reader, path_to_history)
 
 
 def get_args_parser():
