@@ -1,3 +1,4 @@
+import sys
 import time
 import asyncio
 import aiofiles
@@ -27,6 +28,7 @@ async def reconnect_endlessly(async_function):
         try:
             await async_function()
         except ConnectionError:
+            sys.stderr.write("Отсутствует подключение к интернету\n")
             failed_attempts_to_open_socket += 1
             continue
 
