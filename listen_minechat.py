@@ -1,6 +1,7 @@
 import time
 import asyncio
 import aiofiles
+import functools
 import contextlib
 import configargparse
 from dotenv import load_dotenv
@@ -14,10 +15,20 @@ async def open_socket(host, port):
     try:
         reader, writer = await asyncio.open_connection(host, port)
         yield reader
-    except ConnectionError:
-        yield None
     finally:
         writer.close() if writer else None
+
+
+async def reconnect_endlessly(async_function):
+    failed_attempts_to_open_socket = 0
+    while True:
+        if failed_attempts_to_open_socket > 3:
+            time.sleep(60)  # полностью блокируем работу скрипта в ожидании восстановления соединения
+        try:
+            await async_function()
+        except ConnectionError:
+            failed_attempts_to_open_socket += 1
+            continue
 
 
 async def save_message_to_file(message, path_to_history):
@@ -36,18 +47,10 @@ async def get_and_handle_messages(reader, path_to_history):
         print(decoded_chat_message.strip('\n'))
 
 
-async def read_messages_from_chat(host, port, path_to_history):
-    failed_attempts_to_open_socket = 0
-    while True:
-        if failed_attempts_to_open_socket > 3:
-            time.sleep(60)  # полностью блокируем работу скрипта в ожидании восстановления соединения
-        async with open_socket(host, port) as reader:
-            if not reader:
-                failed_attempts_to_open_socket += 1
-                continue
-            failed_attempts_to_open_socket = 0
-            await save_message_to_file('Установлено соединение', path_to_history)
-            await get_and_handle_messages(reader, path_to_history)
+async def read_messages_from_chat(host, port, path_to_history): 
+    async with open_socket(host, port) as reader:
+        await save_message_to_file('Установлено соединение', path_to_history)
+        await get_and_handle_messages(reader, path_to_history)
 
 
 def get_args_parser():
@@ -61,7 +64,8 @@ def get_args_parser():
 def main():
     load_dotenv()
     args = get_args_parser().parse_args()
-    asyncio.run(read_messages_from_chat(args.host, int(args.port), args.history))
+    read_function = functools.partial(read_messages_from_chat, args.host, int(args.port), args.history)
+    asyncio.run(reconnect_endlessly(read_function))
 
 
 if __name__ == "__main__":
